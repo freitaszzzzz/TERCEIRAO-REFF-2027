@@ -1,0 +1,17 @@
+# Arquivos privados do projeto Firebase (NUNCA enviar para o GitHub)
+firebase-config.js
+.firebaserc
+.firebase/
+
+# Logs e dependências locais
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+node_modules/
+.env
+.env.local
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini

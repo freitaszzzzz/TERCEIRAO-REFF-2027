@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terceirão 2027 — Portal da Turma | Refferencial</title>
+  <meta name="description" content="Portal oficial do Terceirão 2027: Formatura, Interclasse, Trotes e Organização da Turma." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-role="visitor">
+  <div class="app-shell">
+    <!-- Mobile overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="sidebar" aria-label="Navegação principal">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-logo-wrap">
+            <img src="camisetas_interclasse_2027/00_logo_6_jogos_refferencial_2027.png" alt="Logo 6º Jogos Refferencial 2027" class="brand-logo" />
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">Terceirão <span class="accent-text">2027</span></span>
+            <span class="brand-sub" id="classNameDisplay">3º Ano • Refferencial</span>
+          </div>
+        </div>
+        <button class="icon-btn mobile-only" id="closeSidebarBtn" aria-label="Fechar menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <nav class="nav-list" role="tablist" aria-label="Categorias e abas do portal">
+        <!-- PRINCIPAL -->
+        <div class="nav-group-label">Principal</div>
+        <button class="nav-item active" data-tab="dashboard" role="tab" aria-selected="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span>Visão Geral</span>
+        </button>
+
+        <!-- CATEGORIA 1: FORMATURA (PRIMEIRO NA LISTA) -->
+        <div class="nav-group-label">Formatura</div>
+        <button class="nav-item" data-tab="formatura-caixa" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 0 0-2.5-2h-1a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-1a2.5 2.5 0 0 1-2.5-2"/><path d="M12 5v2m0 10v2"/></svg>
+          <span>Caixa & Progresso</span>
+          <span class="nav-badge success" id="badgeFormatura">0%</span>
+        </button>
+        <button class="nav-item" data-tab="formatura-plano" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>Planejamento da Festa</span>
+        </button>
+
+        <!-- CATEGORIA 2: INTERCLASSE -->
+        <div class="nav-group-label">Interclasse</div>
+        <button class="nav-item" data-tab="inter-camisas" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>
+          <span>Camisas: Nome & Tam.</span>
+          <span class="nav-badge" id="badgeCamisas">0</span>
+        </button>
+        <button class="nav-item" data-tab="inter-datas" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+          <span>Datas dos Jogos</span>
+        </button>
+        <button class="nav-item" data-tab="inter-times" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+          <span>Times & Jogadores</span>
+        </button>
+        <button class="nav-item" data-tab="inter-modelos" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          <span>Modelos & Anotações</span>
+        </button>
+
+        <!-- CATEGORIA 3: TROTES & EVENTOS -->
+        <div class="nav-group-label">Trotes & Eventos</div>
+        <button class="nav-item" data-tab="trotes-cal" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+          <span>Calendário de Trotes</span>
+          <span class="nav-badge" id="badgeTrotes">0</span>
+        </button>
+        <button class="nav-item" data-tab="trotes-ideias" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>
+          <span>Ideias & Regras</span>
+        </button>
+
+        <!-- CATEGORIA 4: ORGANIZAÇÃO -->
+        <div class="nav-group-label">Organização</div>
+        <button class="nav-item" data-tab="org-enquetes" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7" rx="1"/><rect x="12" y="6" width="3" height="11" rx="1"/><rect x="17" y="13" width="3" height="4" rx="1"/></svg>
+          <span>Enquetes da Sala</span>
+        </button>
+        <button class="nav-item" data-tab="org-alunos" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Alunos & Funções</span>
+          <span class="nav-badge" id="badgeAlunos">0</span>
+        </button>
+        <button class="nav-item" data-tab="org-tarefas" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></svg>
+          <span>Comissão & Tarefas</span>
+          <span class="nav-badge warn" id="badgeTarefas">0</span>
+        </button>
+
+        <!-- CATEGORIA 5: ADMINISTRAÇÃO (SOMENTE ORGANIZADORES) -->
+        <div class="nav-group-label admin-only">Administração</div>
+        <button class="nav-item admin-only" data-tab="admin-acessos" role="tab" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span>Gerenciar Acessos</span>
+          <span class="nav-badge admin-pill-badge">ADMIN</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="save-indicator" id="connectionIndicator">
+          <span class="dot-live" id="connectionDot"></span>
+          <span id="connectionLabel">Conectando...</span>
+        </div>
+        <div id="sidebarUserBox" class="sidebar-user-box">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn mobile-only" id="openSidebarBtn" aria-label="Abrir menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="page-heading">
+            <h1 id="topbarTitle">Visão Geral</h1>
+            <p id="topbarSubtitle">Portal oficial do Terceirão 2027</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <span id="roleBadgeTop" class="role-badge visitor">👁️ Visualização</span>
+          <button class="btn-primary btn-sm" id="openAuthBtn">Entrar / Cadastrar</button>
+          <button class="btn-ghost btn-sm admin-only" id="settingsBtn" title="Configurações da turma">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+            <span class="hide-sm">Configurar</span>
+          </button>
+          <button class="btn-ghost btn-sm auth-only" id="logoutBtn" style="display:none;">Sair</button>
+          <button class="icon-btn" id="themeToggleBtn" aria-label="Alternar tema claro/escuro" title="Alternar tema">
+            <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Firebase Mode Banner (shown only if firebase-config.js still has placeholder values) -->
+      <div id="firebasePreviewBanner" class="preview-banner" style="display:none;">
+        <div>
+          <strong>⚡ Modo Prévia Local (Firebase ainda não conectado):</strong>
+          Configure <code>firebase-config.js</code> com as chaves do seu projeto Firebase para sincronizar online em tempo real. Enquanto isso, você já pode testar cadastro, login (o 1º cadastro vira Admin automaticamente) e todas as abas aqui!
+        </div>
+      </div>
+
+      <main class="main-content" id="mainContent">
+
+        <!-- ==================== TAB: VISÃO GERAL ==================== -->
+        <section class="tab-panel active" id="panel-dashboard" role="tabpanel">
+          <div class="hero-banner">
+            <div class="hero-copy">
+              <div class="hero-pill">
+                <span>🎓</span>
+                <span id="heroClassBadge">TERCEIRÃO 2027 • 3º ANO REFFERENCIAL</span>
+              </div>
+              <h2>Portal Oficial do Terceirão 2027</h2>
+              <p>Acompanhe em tempo real o progresso da formatura, datas e times do Interclasse, calendário de trotes, enquetes e organização geral da sala.</p>
+              <div class="hero-actions">
+                <button class="btn-primary" data-jump="formatura-caixa">Ver Caixa da Formatura</button>
+                <button class="btn-secondary" data-jump="inter-camisas">Minha Camisa do Interclasse</button>
+                <button class="btn-secondary" data-jump="trotes-cal">Calendário de Trotes</button>
+              </div>
+            </div>
+            <div class="countdown-cluster" id="countdownCluster"></div>
+          </div>
+
+          <div class="kpi-grid" id="dashboardKpis"></div>
+
+          <div class="dashboard-split">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>📢 Mural de Avisos da Sala</h3>
+                  <p class="muted-sm">Comunicados oficiais publicados pelos organizadores</p>
+                </div>
+                <div class="card-header-actions">
+                  <button class="btn-ghost btn-sm" id="copyNoticesWhatsappBtn">Copiar p/ WhatsApp</button>
+                  <button class="btn-primary btn-sm admin-only" id="addNoticeBtn">+ Aviso</button>
+                </div>
+              </div>
+              <div id="noticesList" class="stack-list"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>⚡ Próximos Eventos</h3>
+                  <p class="muted-sm">Trotes e jogos agendados chegando</p>
+                </div>
+                <button class="btn-ghost btn-sm" data-jump="trotes-cal">Ver calendário</button>
+              </div>
+              <div id="upcomingFeed" class="stack-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== FORMATURA: CAIXA & PROGRESSO ==================== -->
+        <section class="tab-panel" id="panel-formatura-caixa" role="tabpanel">
+          <div class="finance-hero card">
+            <div class="finance-hero-top">
+              <div>
+                <span class="tag tag-emerald">CAIXA DA FORMATURA 2027</span>
+                <h2 id="financeBalanceHeadline">R$ 0,00</h2>
+                <p class="muted-sm" id="financeGoalSub">Meta ainda não definida</p>
+              </div>
+              <div class="toolbar-actions">
+                <button class="btn-secondary btn-sm" id="copyFinanceWhatsappBtn">Resumo p/ WhatsApp</button>
+                <button class="btn-secondary btn-sm admin-only" id="editGoalBtn">Editar Meta</button>
+                <button class="btn-primary admin-only" id="addTransactionBtn">+ Nova Movimentação</button>
+              </div>
+            </div>
+
+            <div class="progress-mega-wrap">
+              <div class="progress-labels">
+                <span id="financePercentLabel">0% da meta atingida</span>
+                <span id="financeRemainingLabel">Defina a meta em Configurar</span>
+              </div>
+              <div class="progress-track mega">
+                <div class="progress-fill" id="financeProgressBar" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="finance-mini-kpis" id="financeMiniKpis"></div>
+          </div>
+
+          <div class="dashboard-split">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>📊 Arrecadação por Origem</h3>
+                  <p class="muted-sm">Distribuição das entradas registradas no caixa</p>
+                </div>
+              </div>
+              <div id="financeChartContainer"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>🧮 Simulador de Meta por Aluno</h3>
+                  <p class="muted-sm">Simule quanto falta por aluno até a formatura</p>
+                </div>
+              </div>
+              <div class="simulator-box">
+                <div class="form-row-2">
+                  <div class="field">
+                    <label for="simStudents">Qtd. de Alunos</label>
+                    <input type="number" id="simStudents" min="1" max="300" value="30" />
+                  </div>
+                  <div class="field">
+                    <label for="simMonths">Meses restantes</label>
+                    <input type="number" id="simMonths" min="1" max="36" value="12" />
+                  </div>
+                </div>
+                <div id="simulatorResult" class="sim-result"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3>💸 Extrato de Entradas e Saídas</h3>
+                <p class="muted-sm">Transparência total das movimentações da formatura</p>
+              </div>
+              <select id="txTypeFilter" class="select-sm" aria-label="Filtrar movimentações">
+                <option value="all">Todas</option>
+                <option value="entrada">Entradas</option>
+                <option value="saida">Saídas</option>
+              </select>
+            </div>
+            <div id="transactionsList" class="stack-list"></div>
+          </div>
+        </section>
+
+        <!-- ==================== FORMATURA: PLANEJAMENTO DA FESTA ==================== -->
+        <section class="tab-panel" id="panel-formatura-plano" role="tabpanel">
+          <div class="section-toolbar">
+            <div>
+              <h2>Planejamento & Orçamentos da Formatura</h2>
+              <p class="muted-sm">Acompanhe fornecedores, etapas da festa, buffet, DJ, fotografia e contratos</p>
+            </div>
+            <button class="btn-primary admin-only" id="addFormaturaPlanBtn">+ Novo Item / Fornecedor</button>
+          </div>
+          <div id="formaturaPlansGrid" class="cards-grid-2"></div>
+        </section>
+
+        <!-- ==================== INTERCLASSE: CAMISAS (NOME & TAMANHO — PÚBLICO) ==================== -->
+        <section class="tab-panel" id="panel-inter-camisas" role="tabpanel">
+          <div class="section-toolbar">
+            <div>
+              <h2>Camisas do Interclasse — Nome & Tamanho</h2>
+              <p class="muted-sm">Cada aluno logado pode cadastrar e editar <strong>apenas a sua própria camisa</strong>. Organizadores podem editar qualquer registro.</p>
+            </div>
+            <div class="toolbar-actions">
+              <button class="btn-secondary btn-sm" id="copyShirtOrdersBtn">Copiar lista p/ Malharia</button>
+              <button class="btn-primary btn-sm admin-only" id="adminAddShirtOrderBtn">+ Cadastrar Aluno</button>
+            </div>
+          </div>
+
+          <!-- Own Shirt Editor Card (visible for logged-in users, prompt for visitors) -->
+          <div class="card own-shirt-card" id="ownShirtCard" style="margin-bottom:20px;"></div>
+
+          <!-- Size summary KPIs -->
+          <div class="kpi-grid" id="shirtSizeSummary"></div>
+
+          <!-- Full class list -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3>👕 Lista Geral de Camisas da Sala</h3>
+                <p class="muted-sm" id="shirtOrdersCount">0 camisas registradas</p>
+              </div>
+              <div class="search-inline">
+                <input type="search" id="shirtOrderSearch" placeholder="Buscar por nome ou tamanho..." />
+              </div>
+            </div>
+            <div class="table-wrap" id="shirtOrdersTableWrap"></div>
+          </div>
+        </section>
+
+        <!-- ==================== INTERCLASSE: DATAS DOS JOGOS POR MODALIDADE ==================== -->
+        <section class="tab-panel" id="panel-inter-datas" role="tabpanel">
+          <div class="section-toolbar">
+            <div>
+              <h2>Datas dos Jogos por Modalidade</h2>
+              <p class="muted-sm">Agenda oficial das partidas do Interclasse organizada por esporte (editável apenas pelos organizadores)</p>
+            </div>
+            <div class="toolbar-actions">
+              <select id="gamesModalityFilter" class="select-sm" aria-label="Filtrar jogos por modalidade">
+                <option value="all">Todas as modalidades</option>
+              </select>
+              <button class="btn-primary admin-only" id="addGameBtn">+ Agendar Jogo</button>
+            </div>
+          </div>
+          <div id="gamesByModalityContainer" class="stack-list"></div>
+        </section>
+
+        <!-- ==================== INTERCLASSE: TIMES & JOGADORES ==================== -->
+        <section class="tab-panel" id="panel-inter-times" role="tabpanel">
+          <div class="section-toolbar">
+            <div>
+              <h2>Times & Jogadores do Interclasse</h2>
+              <p class="muted-sm">Escalações, capitães e jogadores de cada modalidade (visível para todos • editável apenas por organizadores)</p>
+            </div>
+            <button class="btn-primary admin-only" id="addSportBtn">+ Nova Modalidade / Time</button>
+          </div>
+          <div id="sportsGrid" class="cards-grid-2"></div>
+        </section>
+
+        <!-- ==================== INTERCLASSE: MODELOS & ANOTAÇÕES ==================== -->
+        <section class="tab-panel" id="panel-inter-modelos" role="tabpanel">
+          <div class="interclasse-hero card">
+            <div class="interclasse-hero-left">
+              <img src="camisetas_interclasse_2027/00_logo_6_jogos_refferencial_2027.png" alt="Escudo 6º Jogos Refferencial 2027" class="interclasse-shield" />
+              <div>
+                <span class="tag tag-orange">6º JOGOS REFFERENCIAL • 2027</span>
+                <h2>Modelos de Camisetas & Anotações Gerais</h2>
+                <p class="muted-sm">Amplie as artes das camisetas, vote no seu modelo favorito (1 voto por conta) e acompanhe os avisos e materiais da torcida.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-toolbar">
+            <div>
+              <h3>👕 Galeria & Votação das Camisetas</h3>
+              <p class="muted-sm" id="shirtVoteHint">Faça login como aluno ou organizador para registrar seu voto.</p>
+            </div>
+            <div class="toolbar-actions">
+              <button class="btn-secondary btn-sm" id="copyShirtsSummaryBtn">Copiar parcial p/ WhatsApp</button>
+              <button class="btn-secondary btn-sm admin-only" id="loadPresetShirtsBtn">Carregar os 6 Modelos da Pasta</button>
+              <button class="btn-primary btn-sm admin-only" id="addShirtModelBtn">+ Adicionar Modelo</button>
+            </div>
+          </div>
+          <div id="shirtsGrid" class="shirts-grid" style="margin-bottom:24px;"></div>
+
+          <div class="dashboard-split">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>📝 Anotações do Interclasse</h3>
+                  <p class="muted-sm">Regras, horários de treino, uniformes e gritos de guerra</p>
+                </div>
+                <button class="btn-primary btn-sm admin-only" id="addInterNoteBtn">+ Anotação</button>
+              </div>
+              <div id="interNotesList" class="stack-list"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>🥁 Checklist da Torcida & Logística</h3>
+                  <p class="muted-sm">Itens combinados para os dias dos jogos</p>
+                </div>
+              </div>
+              <form id="interChecklistForm" class="inline-form admin-only">
+                <input type="text" id="interChecklistInput" placeholder="Ex: Bandeirão, tinta facial, caixa de som..." required />
+                <button type="submit" class="btn-primary btn-sm">Adicionar</button>
+              </form>
+              <div id="interChecklist" class="checklist"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TROTES: CALENDÁRIO ==================== -->
+        <section class="tab-panel" id="panel-trotes-cal" role="tabpanel">
+          <div class="section-toolbar">
+            <div>
+              <h2>Calendário de Trotes 2027</h2>
+              <p class="muted-sm">Acompanhe as datas e temas dos trotes ao longo do ano</p>
+            </div>
+            <div class="toolbar-actions">
+              <button class="btn-secondary btn-sm" id="copyTrotesWhatsappBtn">Copiar calendário p/ WhatsApp</button>
+              <button class="btn-primary admin-only" id="addTroteBtn">+ Novo Trote</button>
+            </div>
+          </div>
+
+          <div class="trotes-layout">
+            <div class="card calendar-card">
+              <div class="calendar-header">
+                <button class="icon-btn" id="prevMonthBtn" aria-label="Mês anterior">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <div class="calendar-month-title" id="calendarMonthLabel">Janeiro 2027</div>
+                <button class="icon-btn" id="nextMonthBtn" aria-label="Próximo mês">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <div class="calendar-weekdays">
+                <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+              </div>
+              <div class="calendar-grid" id="calendarGrid"></div>
+              <div class="calendar-legend">
+                <span><i class="legend-dot planned"></i> Planejado</span>
+                <span><i class="legend-dot confirmed"></i> Confirmado</span>
+                <span><i class="legend-dot done"></i> Realizado</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>🎭 Lista de Trotes</h3>
+                  <p class="muted-sm" id="trotesFilterInfo">0 trote(s)</p>
+                </div>
+                <select id="troteStatusFilter" class="select-sm" aria-label="Filtrar status dos trotes">
+                  <option value="all">Todos</option>
+                  <option value="confirmado">Confirmados</option>
+                  <option value="planejado">Planejados</option>
+                  <option value="realizado">Realizados</option>
+                </select>
+              </div>
+              <div id="trotesList" class="stack-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TROTES: IDEIAS & REGRAS ==================== -->
+        <section class="tab-panel" id="panel-trotes-ideias" role="tabpanel">
+          <div class="section-toolbar">
+            <div>
+              <h2>Ideias de Temas, Regras & Combinados dos Trotes</h2>
+              <p class="muted-sm">Banco de ideias para futuros trotes, autorizações da escola e combinados gerais da turma</p>
+            </div>
+            <button class="btn-primary admin-only" id="addTroteIdeaBtn">+ Adicionar Ideia / Regra</button>
+          </div>
+          <div class="dashboard-split">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>💡 Banco de Ideias de Trotes</h3>
+                  <p class="muted-sm">Sugestões guardadas para definir próximas datas</p>
+                </div>
+              </div>
+              <div id="troteIdeasList" class="stack-list"></div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>📜 Regras & Autorizações da Escola</h3>
+                  <p class="muted-sm">O que pode e o que não pode nos dias de trote</p>
+                </div>
+              </div>
+              <div id="troteRulesList" class="stack-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== ORGANIZAÇÃO: ENQUETES ==================== -->
+        <section class="tab-panel" id="panel-org-enquetes" role="tabpanel">
+          <div class="section-toolbar">
+            <div>
+              <h2>Enquetes & Votações da Sala</h2>
+              <p class="muted-sm">Alunos logados podem votar (1 voto por conta por enquete). Organizadores criam e gerenciam as enquetes.</p>
+            </div>
+            <button class="btn-primary admin-only" id="addPollBtn">+ Criar Enquete</button>
+          </div>
+          <div id="pollsGrid" class="cards-grid-2"></div>
+        </section>
+
+        <!-- ==================== ORGANIZAÇÃO: ALUNOS & FUNÇÕES ==================== -->
+        <section class="tab-panel" id="panel-org-alunos" role="tabpanel">
+          <div class="section-toolbar">
+            <div>
+              <h2>Alunos da Sala & Funções</h2>
+              <p class="muted-sm">Veja quem faz parte da turma e qual a função de cada um na organização do Terceirão</p>
+            </div>
+            <button class="btn-primary admin-only" id="addMemberBtn">+ Adicionar Aluno</button>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3>👥 Integrantes & Responsabilidades</h3>
+                <p class="muted-sm" id="membersCountLabel">0 alunos cadastrados</p>
+              </div>
+              <div class="search-inline">
+                <input type="search" id="memberSearchInput" placeholder="Buscar por nome ou função..." />
+              </div>
+            </div>
+            <div class="table-wrap" id="membersTableWrap"></div>
+          </div>
+        </section>
+
+        <!-- ==================== ORGANIZAÇÃO: COMISSÃO & TAREFAS ==================== -->
+        <section class="tab-panel" id="panel-org-tarefas" role="tabpanel">
+          <div class="section-toolbar">
+            <div>
+              <h2>Quadro da Comissão & Atas de Reunião</h2>
+              <p class="muted-sm">Acompanhe o que está sendo feito pela comissão e o resumo das reuniões</p>
+            </div>
+            <div class="toolbar-actions admin-only">
+              <button class="btn-secondary" id="addMeetingBtn">+ Nova Ata</button>
+              <button class="btn-primary" id="addTaskBtn">+ Nova Tarefa</button>
+            </div>
+          </div>
+
+          <div class="kanban-board">
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <span class="kanban-dot todo"></span>
+                <h3>A Fazer</h3>
+                <span class="count-pill" id="countTodo">0</span>
+              </div>
+              <div class="kanban-list" id="kanbanTodo"></div>
+            </div>
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <span class="kanban-dot doing"></span>
+                <h3>Em Andamento</h3>
+                <span class="count-pill" id="countDoing">0</span>
+              </div>
+              <div class="kanban-list" id="kanbanDoing"></div>
+            </div>
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <span class="kanban-dot done"></span>
+                <h3>Concluído</h3>
+                <span class="count-pill" id="countDone">0</span>
+              </div>
+              <div class="kanban-list" id="kanbanDone"></div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 20px;">
+            <div class="card-header">
+              <div>
+                <h3>📋 Atas de Reunião</h3>
+                <p class="muted-sm">Decisões oficiais registradas pela sala</p>
+              </div>
+            </div>
+            <div id="meetingsList" class="stack-list"></div>
+          </div>
+        </section>
+
+        <!-- ==================== ADMINISTRAÇÃO: GERENCIAR ACESSOS ==================== -->
+        <section class="tab-panel" id="panel-admin-acessos" role="tabpanel">
+          <div class="section-toolbar">
+            <div>
+              <h2>🛡️ Painel Admin — Gerenciar E-mails, Telefones & Permissões</h2>
+              <p class="muted-sm">Defina exatamente quem são os <strong>Admins (Organizadores)</strong> com permissão total e quem são os <strong>Alunos</strong>.</p>
+            </div>
+            <button class="btn-primary" id="addAccessRoleBtn">+ Pré-cadastrar Admin / Aluno</button>
+          </div>
+
+          <div class="kpi-grid" id="adminAccessKpis"></div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3>🔐 Lista de Contas e Permissões</h3>
+                <p class="muted-sm">Você pode pré-cadastrar o e-mail ou telefone de um organizador antes mesmo de ele criar conta.</p>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <select id="accessRoleFilter" class="select-sm" aria-label="Filtrar por cargo">
+                  <option value="all">Todos</option>
+                  <option value="admin">Somente Admins</option>
+                  <option value="aluno">Somente Alunos</option>
+                </select>
+                <input type="search" id="accessSearchInput" placeholder="Buscar nome, e-mail ou telefone..." style="width:220px;" />
+              </div>
+            </div>
+            <div class="table-wrap" id="accessRolesTableWrap"></div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Generic Modal -->
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h3 id="modalTitle">Modal</h3>
+        <button class="icon-btn" id="closeModalBtn" aria-label="Fechar janela">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Image Lightbox -->
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <button class="icon-btn lightbox-close" id="closeLightboxBtn" aria-label="Fechar imagem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="lightbox-content">
+      <img id="lightboxImg" src="" alt="Visualização da camiseta" />
+      <div class="lightbox-caption">
+        <h3 id="lightboxTitle"></h3>
+        <p id="lightboxDesc"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <script src="firebase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

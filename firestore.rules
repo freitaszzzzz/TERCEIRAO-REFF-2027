@@ -1,0 +1,718 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model — Terceirão 2027 (Cloud Firestore Standard)
+// ===============================================================
+//
+// Authentication:
+//   - Firebase Auth Email/Password.
+//   - Phone logins are mapped deterministically to lowercase synthetic
+//     emails (e.g. "5511999998888@tel.terceirao.app"); regular emails
+//     are used directly. Both appear in request.auth.token.email.
+//
+// Singleton: meta/bootstrap
+//   - initialized: bool (required, must be true)
+//   - firstAdminUid: string (required, must match creator's request.auth.uid)
+//   - firstAdminEmail: string (required, lowercase email matching auth token)
+//   - firstAdminName: string (optional, <= 120 chars)
+//   - createdAt: timestamp | string (required, immutable)
+//   - Access: public read; create once only when doc does not exist; never update/delete.
+//
+// Collection: accessRoles/{authEmail}
+//   Document ID: lowercase authEmail
+//   - authEmail: string (required, immutable, must equal doc ID in lowercase)
+//   - role: string (required, enum: "admin" | "aluno", immutable for non-admins)
+//   - displayContact: string (optional, <= 120 chars)
+//   - fullName: string (optional, <= 120 chars)
+//   - uid: string | null (optional, <= 128 chars; non-admins may only set own uid)
+//   - updatedAt: timestamp | string (optional)
+//   - createdAt: timestamp | string (optional, immutable once set)
+//   - createdBy: string (optional, <= 128 chars, admin-managed)
+//   - Access: read by admin or email owner; create by admin, first-admin bootstrap,
+//     or self-register as "aluno"; update by admin or self (uid/fullName/displayContact/updatedAt
+//     only, role locked); delete by admin only.
+//
+// Public Read-Only + Admin-Only Write Collections:
+//   - settings/{docId}            (e.g. settings/general: className, dates, financeGoal, monthlyFee, theme)
+//   - notices/{docId}             (title, body, author, date, priority, pinned)
+//   - financeTransactions/{docId} (type: "entrada"|"saida", category, description, amount >= 0, date)
+//   - formaturaPlans/{docId}      (title/name, description, category, status, estimatedCost/amount >= 0, date)
+//   - interclasseSports/{docId}   (name, icon, category, captain, players list <= 100, notes)
+//   - interclasseGames/{docId}    (sport, opponent, date, time, location, score, result, notes)
+//   - interclasseNotes/{docId}    (title, content/body/text, tag, done, type)
+//   - shirtModels/{docId}         (name, palette, image/imageUrl, order, description, active)
+//   - trotes/{docId}              (title, date, status, theme, description, tips)
+//   - troteIdeas/{docId}          (title/name, theme, description, tips, author/suggestedBy, status)
+//   - classMembers/{docId}        (name/fullName, role, shirtSize, hoodieSize, paymentStatus, paidAmount >= 0, notes)
+//   - tasks/{docId}               (title, area, owner/assignee, due/dueDate, status, description, priority)
+//   - meetings/{docId}            (title, date, summary/notes/minutes, participants, decisions)
+//   - polls/{pollId}              (question/title, category, options list <= 20, active/closed, closesAt)
+//
+// Collection: shirtOrders/{orderId}
+//   Document ID: request.auth.uid for student self-service (or admin-assigned ID)
+//   - uid: string (required for non-admins and must equal orderId & request.auth.uid; immutable)
+//   - studentName: string (required, 1..100 chars)
+//   - shirtName: string (required, 1..60 chars)
+//   - shirtSize: string (required, 1..24 chars)
+//   - shirtNumber / number: string (<= 10 chars) | int (0..999) (optional)
+//   - fit / cut / model / modelId: string (optional, <= 80 chars)
+//   - notes: string (optional, <= 300 chars)
+//   - paid / delivered: bool (optional, admin-only)
+//   - paymentStatus: string (optional, <= 40 chars, admin-only)
+//   - createdAt / updatedAt: timestamp | string (optional; createdAt immutable)
+//   - createdBy / updatedBy: string (optional, <= 128 chars, admin-only)
+//   - Access: public read; create/update/delete by admin or owning student.
+//
+// Subcollection: polls/{pollId}/votes/{uid}
+//   Document ID: voter's Firebase Auth UID
+//   - uid: string (required, must equal doc ID & request.auth.uid for non-admins; immutable)
+//   - optionId: string (required, 1..100 chars)
+//   - optionLabel: string (optional, <= 200 chars)
+//   - voterName: string (optional, <= 100 chars)
+//   - pollId: string (optional, must match parent pollId if present)
+//   - createdAt / updatedAt: timestamp | string (optional; createdAt immutable)
+//   - Access: public read; create/update (requires parent poll to exist) & delete by admin or owner.
+//
+// Collection: shirtVotes/{uid}
+//   Document ID: voter's Firebase Auth UID
+//   - uid: string (required, must equal doc ID & request.auth.uid for non-admins; immutable)
+//   - modelId: string (required, 1..100 chars)
+//   - modelName: string (optional, <= 150 chars)
+//   - voterName: string (optional, <= 100 chars)
+//   - createdAt / updatedAt: timestamp | string (optional; createdAt immutable)
+//   - Access: public read; create/update/delete by admin or owner.
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===========================================================
+    // Helper Functions
+    // ===========================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasAuthEmail() {
+      return isAuthenticated() &&
+        request.auth.token.email is string &&
+        request.auth.token.email.size() > 0;
+    }
+
+    function authEmailLower() {
+      return request.auth.token.email.lower();
+    }
+
+    function isEmailOwner(authEmail) {
+      return hasAuthEmail() && authEmailLower() == authEmail;
+    }
+
+    function isAdmin() {
+      return hasAuthEmail() &&
+        exists(/databases/$(database)/documents/accessRoles/$(authEmailLower())) &&
+        get(/databases/$(database)/documents/accessRoles/$(authEmailLower())).data.role == 'admin';
+    }
+
+    function isBootstrapPending() {
+      return !exists(/databases/$(database)/documents/meta/bootstrap);
+    }
+
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('uid' in resource.data) ||
+        ('uid' in request.resource.data && request.resource.data.uid == resource.data.uid);
+    }
+
+    function createdAtNotModified() {
+      return !('createdAt' in resource.data) ||
+        ('createdAt' in request.resource.data && request.resource.data.createdAt == resource.data.createdAt);
+    }
+
+    function hasRequiredFields(data, fields) {
+      return data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(data, fields) {
+      return data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function isNonEmptyString(val, maxLen) {
+      return val is string && val.size() >= 1 && val.size() <= maxLen;
+    }
+
+    function isBoundedString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    function isValidOptionalString(data, field, maxLen) {
+      return !(field in data) ||
+        (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function isValidOptionalNonEmptyString(data, field, maxLen) {
+      return !(field in data) ||
+        (data[field] is string && data[field].size() >= 1 && data[field].size() <= maxLen);
+    }
+
+    function isValidOptionalBool(data, field) {
+      return !(field in data) || data[field] is bool;
+    }
+
+    function isValidOptionalNonNegativeNumber(data, field, maxVal) {
+      return !(field in data) ||
+        (data[field] is number && data[field] >= 0 && data[field] <= maxVal);
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.size() >= 5 &&
+        email.size() <= 254 &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidTimestampOrString(val) {
+      return val is timestamp || (val is string && val.size() >= 1 && val.size() <= 64);
+    }
+
+    function isValidOptionalTimestampOrString(data, field) {
+      return !(field in data) || isValidTimestampOrString(data[field]);
+    }
+
+    function isValidOptionalDate(data, field) {
+      return !(field in data) ||
+        data[field] is timestamp ||
+        (data[field] is string && data[field].size() <= 32);
+    }
+
+    function isValidOptionalList(data, field, maxSize) {
+      return !(field in data) || (data[field] is list && data[field].size() <= maxSize);
+    }
+
+    // ===========================================================
+    // Domain Validators (Used in BOTH create and update)
+    // ===========================================================
+
+    function isValidBootstrap(data) {
+      return hasOnlyAllowedFields(data, [
+          'initialized', 'firstAdminUid', 'firstAdminEmail', 'firstAdminName', 'createdAt'
+        ]) &&
+        hasRequiredFields(data, ['initialized', 'firstAdminUid', 'firstAdminEmail', 'createdAt']) &&
+        data.initialized == true &&
+        isNonEmptyString(data.firstAdminUid, 128) &&
+        data.firstAdminUid == request.auth.uid &&
+        isValidEmail(data.firstAdminEmail) &&
+        data.firstAdminEmail == data.firstAdminEmail.lower() &&
+        data.firstAdminEmail == authEmailLower() &&
+        isValidOptionalString(data, 'firstAdminName', 120) &&
+        isValidTimestampOrString(data.createdAt);
+    }
+
+    function isValidAccessRole(data, authEmail) {
+      return hasOnlyAllowedFields(data, [
+          'authEmail', 'displayContact', 'fullName', 'role', 'uid',
+          'updatedAt', 'createdAt', 'createdBy'
+        ]) &&
+        hasRequiredFields(data, ['authEmail', 'role']) &&
+        isValidEmail(data.authEmail) &&
+        data.authEmail == authEmail &&
+        data.authEmail == data.authEmail.lower() &&
+        data.role in ['admin', 'aluno'] &&
+        isValidOptionalString(data, 'displayContact', 120) &&
+        isValidOptionalString(data, 'fullName', 120) &&
+        (!('uid' in data) || data.uid == null || isBoundedString(data.uid, 128)) &&
+        isValidOptionalTimestampOrString(data, 'updatedAt') &&
+        isValidOptionalTimestampOrString(data, 'createdAt') &&
+        isValidOptionalString(data, 'createdBy', 128);
+    }
+
+    function isValidShirtOrder(data) {
+      return hasOnlyAllowedFields(data, [
+          'uid', 'studentName', 'shirtName', 'shirtSize', 'shirtNumber', 'number',
+          'fit', 'cut', 'model', 'modelId', 'notes',
+          'paid', 'paymentStatus', 'delivered',
+          'createdAt', 'updatedAt', 'createdBy', 'updatedBy'
+        ]) &&
+        hasRequiredFields(data, ['studentName', 'shirtName', 'shirtSize']) &&
+        (!('uid' in data) || data.uid == null || isBoundedString(data.uid, 128)) &&
+        isNonEmptyString(data.studentName, 100) &&
+        isNonEmptyString(data.shirtName, 60) &&
+        isNonEmptyString(data.shirtSize, 24) &&
+        (!('shirtNumber' in data) ||
+          isBoundedString(data.shirtNumber, 10) ||
+          (data.shirtNumber is int && data.shirtNumber >= 0 && data.shirtNumber <= 999)) &&
+        (!('number' in data) ||
+          isBoundedString(data.number, 10) ||
+          (data.number is int && data.number >= 0 && data.number <= 999)) &&
+        isValidOptionalString(data, 'fit', 80) &&
+        isValidOptionalString(data, 'cut', 80) &&
+        isValidOptionalString(data, 'model', 80) &&
+        isValidOptionalString(data, 'modelId', 80) &&
+        isValidOptionalString(data, 'notes', 300) &&
+        isValidOptionalBool(data, 'paid') &&
+        isValidOptionalString(data, 'paymentStatus', 40) &&
+        isValidOptionalBool(data, 'delivered') &&
+        isValidOptionalTimestampOrString(data, 'createdAt') &&
+        isValidOptionalTimestampOrString(data, 'updatedAt') &&
+        isValidOptionalString(data, 'createdBy', 128) &&
+        isValidOptionalString(data, 'updatedBy', 128);
+    }
+
+    function hasNoAdminOnlyShirtOrderFields(data) {
+      return !data.keys().hasAny(['paid', 'paymentStatus', 'delivered', 'createdBy', 'updatedBy']);
+    }
+
+    function isValidPollVote(data, pollId) {
+      return hasOnlyAllowedFields(data, [
+          'uid', 'optionId', 'optionLabel', 'voterName', 'pollId', 'createdAt', 'updatedAt'
+        ]) &&
+        hasRequiredFields(data, ['uid', 'optionId']) &&
+        isNonEmptyString(data.uid, 128) &&
+        isNonEmptyString(data.optionId, 100) &&
+        isValidOptionalString(data, 'optionLabel', 200) &&
+        isValidOptionalString(data, 'voterName', 100) &&
+        (!('pollId' in data) || data.pollId == pollId) &&
+        isValidOptionalTimestampOrString(data, 'createdAt') &&
+        isValidOptionalTimestampOrString(data, 'updatedAt');
+    }
+
+    function isValidShirtVote(data) {
+      return hasOnlyAllowedFields(data, [
+          'uid', 'modelId', 'modelName', 'voterName', 'createdAt', 'updatedAt'
+        ]) &&
+        hasRequiredFields(data, ['uid', 'modelId']) &&
+        isNonEmptyString(data.uid, 128) &&
+        isNonEmptyString(data.modelId, 100) &&
+        isValidOptionalString(data, 'modelName', 150) &&
+        isValidOptionalString(data, 'voterName', 100) &&
+        isValidOptionalTimestampOrString(data, 'createdAt') &&
+        isValidOptionalTimestampOrString(data, 'updatedAt');
+    }
+
+    // Baseline validator for admin-managed documents
+    function isValidAdminDocument(data) {
+      return data is map &&
+        data.keys().size() >= 1 &&
+        data.keys().size() <= 40 &&
+        isValidOptionalTimestampOrString(data, 'createdAt') &&
+        isValidOptionalTimestampOrString(data, 'updatedAt') &&
+        isValidOptionalString(data, 'createdBy', 128) &&
+        isValidOptionalString(data, 'updatedBy', 128);
+    }
+
+    function isValidSetting(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalString(data, 'className', 120) &&
+        isValidOptionalString(data, 'schoolName', 120) &&
+        isValidOptionalDate(data, 'graduationDate') &&
+        isValidOptionalDate(data, 'interclasseDate') &&
+        isValidOptionalDate(data, 'enemDate') &&
+        isValidOptionalNonNegativeNumber(data, 'financeGoal', 100000000) &&
+        isValidOptionalNonNegativeNumber(data, 'monthlyFee', 1000000) &&
+        isValidOptionalString(data, 'theme', 30) &&
+        isValidOptionalString(data, 'pixKey', 200);
+    }
+
+    function isValidNotice(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalNonEmptyString(data, 'title', 200) &&
+        isValidOptionalString(data, 'body', 5000) &&
+        isValidOptionalString(data, 'content', 5000) &&
+        isValidOptionalString(data, 'author', 120) &&
+        isValidOptionalDate(data, 'date') &&
+        isValidOptionalString(data, 'priority', 30) &&
+        isValidOptionalBool(data, 'pinned');
+    }
+
+    function isValidFinanceTransaction(data) {
+      return isValidAdminDocument(data) &&
+        (!('type' in data) || data.type in ['entrada', 'saida']) &&
+        isValidOptionalString(data, 'category', 100) &&
+        isValidOptionalString(data, 'description', 500) &&
+        isValidOptionalNonNegativeNumber(data, 'amount', 100000000) &&
+        isValidOptionalDate(data, 'date') &&
+        isValidOptionalString(data, 'notes', 1000);
+    }
+
+    function isValidFormaturaPlan(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalString(data, 'title', 200) &&
+        isValidOptionalString(data, 'name', 200) &&
+        isValidOptionalString(data, 'category', 100) &&
+        isValidOptionalString(data, 'description', 5000) &&
+        isValidOptionalString(data, 'notes', 3000) &&
+        isValidOptionalString(data, 'status', 40) &&
+        isValidOptionalString(data, 'vendor', 150) &&
+        isValidOptionalNonNegativeNumber(data, 'estimatedCost', 100000000) &&
+        isValidOptionalNonNegativeNumber(data, 'cost', 100000000) &&
+        isValidOptionalNonNegativeNumber(data, 'amount', 100000000) &&
+        isValidOptionalDate(data, 'date');
+    }
+
+    function isValidInterclasseSport(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalNonEmptyString(data, 'name', 120) &&
+        isValidOptionalString(data, 'icon', 16) &&
+        isValidOptionalString(data, 'category', 120) &&
+        isValidOptionalString(data, 'captain', 120) &&
+        isValidOptionalList(data, 'players', 100) &&
+        isValidOptionalString(data, 'notes', 3000);
+    }
+
+    function isValidInterclasseGame(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalString(data, 'sport', 120) &&
+        isValidOptionalString(data, 'opponent', 120) &&
+        isValidOptionalDate(data, 'date') &&
+        isValidOptionalString(data, 'time', 32) &&
+        isValidOptionalString(data, 'location', 160) &&
+        isValidOptionalString(data, 'score', 60) &&
+        isValidOptionalString(data, 'result', 40) &&
+        isValidOptionalString(data, 'notes', 2000);
+    }
+
+    function isValidInterclasseNote(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalString(data, 'title', 200) &&
+        isValidOptionalString(data, 'content', 5000) &&
+        isValidOptionalString(data, 'body', 5000) &&
+        isValidOptionalString(data, 'text', 5000) &&
+        isValidOptionalString(data, 'tag', 60) &&
+        isValidOptionalString(data, 'type', 40) &&
+        isValidOptionalBool(data, 'done');
+    }
+
+    function isValidShirtModel(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalNonEmptyString(data, 'name', 150) &&
+        isValidOptionalString(data, 'palette', 120) &&
+        isValidOptionalString(data, 'image', 2000) &&
+        isValidOptionalString(data, 'imageUrl', 2000) &&
+        isValidOptionalString(data, 'description', 1000) &&
+        isValidOptionalNonNegativeNumber(data, 'order', 10000) &&
+        isValidOptionalBool(data, 'active');
+    }
+
+    function isValidTrote(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalNonEmptyString(data, 'title', 200) &&
+        isValidOptionalDate(data, 'date') &&
+        isValidOptionalString(data, 'status', 40) &&
+        isValidOptionalString(data, 'theme', 120) &&
+        isValidOptionalString(data, 'description', 5000) &&
+        isValidOptionalString(data, 'tips', 2000);
+    }
+
+    function isValidTroteIdea(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalString(data, 'title', 200) &&
+        isValidOptionalString(data, 'name', 200) &&
+        isValidOptionalString(data, 'theme', 120) &&
+        isValidOptionalString(data, 'description', 5000) &&
+        isValidOptionalString(data, 'tips', 2000) &&
+        isValidOptionalString(data, 'author', 120) &&
+        isValidOptionalString(data, 'suggestedBy', 120) &&
+        isValidOptionalString(data, 'status', 40);
+    }
+
+    function isValidClassMember(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalString(data, 'name', 120) &&
+        isValidOptionalString(data, 'fullName', 120) &&
+        isValidOptionalString(data, 'role', 120) &&
+        isValidOptionalString(data, 'shirtSize', 24) &&
+        isValidOptionalString(data, 'hoodieSize', 24) &&
+        isValidOptionalString(data, 'paymentStatus', 40) &&
+        isValidOptionalNonNegativeNumber(data, 'paidAmount', 1000000) &&
+        isValidOptionalString(data, 'notes', 1000);
+    }
+
+    function isValidTask(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalNonEmptyString(data, 'title', 250) &&
+        isValidOptionalString(data, 'area', 80) &&
+        isValidOptionalString(data, 'owner', 120) &&
+        isValidOptionalString(data, 'assignee', 120) &&
+        isValidOptionalDate(data, 'due') &&
+        isValidOptionalDate(data, 'dueDate') &&
+        isValidOptionalString(data, 'status', 40) &&
+        isValidOptionalString(data, 'priority', 30) &&
+        isValidOptionalString(data, 'description', 3000);
+    }
+
+    function isValidMeeting(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalNonEmptyString(data, 'title', 200) &&
+        isValidOptionalDate(data, 'date') &&
+        isValidOptionalString(data, 'summary', 10000) &&
+        isValidOptionalString(data, 'notes', 10000) &&
+        isValidOptionalString(data, 'minutes', 10000) &&
+        (!('participants' in data) ||
+          (data.participants is list && data.participants.size() <= 200) ||
+          isBoundedString(data.participants, 2000)) &&
+        (!('decisions' in data) ||
+          (data.decisions is list && data.decisions.size() <= 100) ||
+          isBoundedString(data.decisions, 5000));
+    }
+
+    function isValidPoll(data) {
+      return isValidAdminDocument(data) &&
+        isValidOptionalString(data, 'question', 300) &&
+        isValidOptionalString(data, 'title', 300) &&
+        isValidOptionalString(data, 'category', 80) &&
+        isValidOptionalList(data, 'options', 20) &&
+        isValidOptionalBool(data, 'active') &&
+        isValidOptionalBool(data, 'closed') &&
+        isValidOptionalDate(data, 'closesAt');
+    }
+
+    // ===========================================================
+    // 1. Identity, Bootstrap & Roles
+    // ===========================================================
+
+    // First-admin bootstrap singleton: public read, one-time create, never update/delete
+    match /meta/bootstrap {
+      allow read: if true;
+      allow create: if isAuthenticated() &&
+        hasAuthEmail() &&
+        isBootstrapPending() &&
+        isValidBootstrap(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    // Role registry keyed by lowercase authEmail (contains email/contact PII -> restricted read)
+    match /accessRoles/{authEmail} {
+      allow read: if isAdmin() || isEmailOwner(authEmail);
+
+      allow create: if isValidAccessRole(request.resource.data, authEmail) && (
+        isAdmin() ||
+        (
+          isBootstrapPending() &&
+          isEmailOwner(authEmail) &&
+          request.resource.data.role == 'admin' &&
+          uidUnchanged() &&
+          !('createdBy' in request.resource.data)
+        ) ||
+        (
+          isEmailOwner(authEmail) &&
+          request.resource.data.role == 'aluno' &&
+          uidUnchanged() &&
+          !('createdBy' in request.resource.data)
+        )
+      );
+
+      allow update: if isValidAccessRole(request.resource.data, authEmail) &&
+        request.resource.data.authEmail == resource.data.authEmail &&
+        createdAtNotModified() && (
+        isAdmin() ||
+        (
+          isEmailOwner(authEmail) &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['uid', 'fullName', 'displayContact', 'updatedAt']) &&
+          (!('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid)
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // ===========================================================
+    // 2. Public Read-Only + Admin-Only Write Collections
+    // ===========================================================
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidSetting(request.resource.data);
+      allow update: if isAdmin() && isValidSetting(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /notices/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidNotice(request.resource.data);
+      allow update: if isAdmin() && isValidNotice(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /financeTransactions/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidFinanceTransaction(request.resource.data);
+      allow update: if isAdmin() && isValidFinanceTransaction(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /formaturaPlans/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidFormaturaPlan(request.resource.data);
+      allow update: if isAdmin() && isValidFormaturaPlan(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /interclasseSports/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidInterclasseSport(request.resource.data);
+      allow update: if isAdmin() && isValidInterclasseSport(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /interclasseGames/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidInterclasseGame(request.resource.data);
+      allow update: if isAdmin() && isValidInterclasseGame(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /interclasseNotes/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidInterclasseNote(request.resource.data);
+      allow update: if isAdmin() && isValidInterclasseNote(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /shirtModels/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidShirtModel(request.resource.data);
+      allow update: if isAdmin() && isValidShirtModel(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /trotes/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidTrote(request.resource.data);
+      allow update: if isAdmin() && isValidTrote(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /troteIdeas/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidTroteIdea(request.resource.data);
+      allow update: if isAdmin() && isValidTroteIdea(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /classMembers/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidClassMember(request.resource.data);
+      allow update: if isAdmin() && isValidClassMember(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /tasks/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidTask(request.resource.data);
+      allow update: if isAdmin() && isValidTask(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /meetings/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidMeeting(request.resource.data);
+      allow update: if isAdmin() && isValidMeeting(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+    }
+
+    match /polls/{pollId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidPoll(request.resource.data);
+      allow update: if isAdmin() && isValidPoll(request.resource.data) && createdAtNotModified();
+      allow delete: if isAdmin();
+
+      // 4A. Poll Votes (1 vote per authenticated user)
+      match /votes/{uid} {
+        allow read: if true;
+
+        allow create: if isValidPollVote(request.resource.data, pollId) &&
+          exists(/databases/$(database)/documents/polls/$(pollId)) && (
+          isAdmin() ||
+          (isOwner(uid) && request.resource.data.uid == request.auth.uid)
+        );
+
+        allow update: if isValidPollVote(request.resource.data, pollId) &&
+          exists(/databases/$(database)/documents/polls/$(pollId)) &&
+          createdAtNotModified() && (
+          isAdmin() ||
+          (isOwner(uid) && request.resource.data.uid == request.auth.uid && uidNotModified())
+        );
+
+        allow delete: if isAdmin() || isOwner(uid);
+      }
+    }
+
+    // ===========================================================
+    // 3. Student Own-Record Editable Collection (Interclasse Shirts)
+    // ===========================================================
+
+    match /shirtOrders/{orderId} {
+      allow read: if true;
+
+      allow create: if isValidShirtOrder(request.resource.data) && (
+        isAdmin() ||
+        (
+          isOwner(orderId) &&
+          'uid' in request.resource.data &&
+          request.resource.data.uid == request.auth.uid &&
+          hasNoAdminOnlyShirtOrderFields(request.resource.data)
+        )
+      );
+
+      allow update: if isValidShirtOrder(request.resource.data) &&
+        createdAtNotModified() && (
+        isAdmin() ||
+        (
+          isOwner(orderId) &&
+          'uid' in request.resource.data &&
+          request.resource.data.uid == request.auth.uid &&
+          uidNotModified() &&
+          areImmutableFieldsUnchanged([
+            'uid', 'createdAt', 'createdBy', 'updatedBy', 'paid', 'paymentStatus', 'delivered'
+          ])
+        )
+      );
+
+      allow delete: if isAdmin() || isOwner(orderId);
+    }
+
+    // ===========================================================
+    // 4B. Interclasse Shirt Model Votes (1 vote per authenticated user)
+    // ===========================================================
+
+    match /shirtVotes/{uid} {
+      allow read: if true;
+
+      allow create: if isValidShirtVote(request.resource.data) && (
+        isAdmin() ||
+        (isOwner(uid) && request.resource.data.uid == request.auth.uid)
+      );
+
+      allow update: if isValidShirtVote(request.resource.data) &&
+        createdAtNotModified() && (
+        isAdmin() ||
+        (isOwner(uid) && request.resource.data.uid == request.auth.uid && uidNotModified())
+      );
+
+      allow delete: if isAdmin() || isOwner(uid);
+    }
+
+    // ===========================================================
+    // 5. Default Deny
+    // ===========================================================
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
